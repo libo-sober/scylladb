@@ -1037,9 +1037,10 @@ static bool atomic_cells_liveness_equal(atomic_cell_view left, atomic_cell_view 
 bool view_updates::can_skip_view_updates(const clustering_or_static_row& update, const clustering_or_static_row& existing) const {
     const row& existing_row = existing.cells();
     const row& updated_row = update.cells();
+    const auto update_kind = update.column_kind();
 
     const bool base_has_nonexpiring_marker = update.marker().is_live() && !update.marker().is_expiring();
-    return std::ranges::all_of(_base->regular_columns(), [this, &updated_row, &existing_row, base_has_nonexpiring_marker] (const column_definition& cdef) {
+    return std::ranges::all_of(_base->regular_columns(), [this, &updated_row, &existing_row, &update_kind, base_has_nonexpiring_marker] (const column_definition& cdef) {
         const auto view_it = _view->columns_by_name().find(cdef.name());
         const bool column_is_selected = view_it != _view->columns_by_name().end();
 
@@ -1053,6 +1054,10 @@ bool view_updates::can_skip_view_updates(const clustering_or_static_row& update,
 
         //TODO(sarna): Optimize collections case - currently they do not go under optimization
         if (!cdef.is_atomic()) {
+            if (!cdef.is_counter()) {
+                updated_row.difference(*_base, update_kind, existing_row);
+                return collection_mutation::get_can_skip_view_updates();
+            } 
             return false;
         }
 

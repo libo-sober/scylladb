@@ -117,6 +117,8 @@ public:
 //  for user types: the key is an index identifying the field, the cell contains the value of the field.
 //  The mutation may also contain a collection-wide tombstone.
 class collection_mutation {
+private:
+    static bool _can_skip_view_updates;
 public:
     managed_bytes _data;
 
@@ -124,6 +126,8 @@ public:
     collection_mutation(const abstract_type&, collection_mutation_view);
     collection_mutation(const abstract_type&, managed_bytes);
     operator collection_mutation_view() const;
+    static bool get_can_skip_view_updates();
+    static void set_can_skip_view_updates(bool can_skip);
 };
 
 collection_mutation merge(const abstract_type&, collection_mutation_view, collection_mutation_view);

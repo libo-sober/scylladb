@@ -336,6 +336,16 @@ collection_mutation merge(const abstract_type& type, collection_mutation_view a,
     });
 }
 
+bool collection_mutation::_can_skip_view_updates = false;
+
+bool collection_mutation::get_can_skip_view_updates() {
+    return _can_skip_view_updates;
+}
+
+void collection_mutation::set_can_skip_view_updates(bool can_skip) {
+    _can_skip_view_updates = can_skip;
+}
+
 template <typename C>
 requires std::is_base_of_v<abstract_type, std::remove_reference_t<C>>
 static collection_mutation_view_description
@@ -354,6 +364,8 @@ difference(collection_mutation_view_description a, collection_mutation_view_desc
 
             auto cell = std::make_pair(c.first, c.second);
             diff.cells.emplace_back(std::move(cell));
+        } else if (compare_atomic_cell_for_merge(c.second, it->second) == 0) {
+            collection_mutation::set_can_skip_view_updates(true);
         }
     }
     if (a.tomb > b.tomb) {
