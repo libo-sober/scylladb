@@ -568,6 +568,9 @@ public:
     // Applies materialized view mutation on this node.
     // Resolves with timed_out_error when timeout is reached.
     future<> mutate_mv_locally(const schema_ptr& s, const frozen_mutation& m, tracing::trace_state_ptr tr_state, db::commitlog::force_sync sync, clock_type::time_point timeout = clock_type::time_point::max(), db::per_partition_rate_limit::info rate_limit_info = std::monostate()) {
+        if (utils::get_local_injector().enter("failed_locally_view_updates")) {
+            return make_exception_future<>(std::runtime_error("Injecting failure for locally view updates"));
+        }
         return mutate_locally(s, m, tr_state, sync, timeout, _write_mv_smp_service_group, rate_limit_info);
     }
     // Applies mutations on this node.
